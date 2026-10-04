@@ -15,7 +15,7 @@
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="監督の返信シミュレーター" />
   <meta name="twitter:description" content="自分の返信を入れると、部活の監督がコンサルの詰め方で返してくる練習ページです。" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b7aa3'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='32' font-family='sans-serif' fill='white'%3E監%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="avatar.jpg" />
   <title>監督の返信シミュレーター</title>
   <style>
     :root {
@@ -180,12 +180,7 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: #e7eef6;
-      color: #3d5d86;
-      display: grid;
-      place-items: center;
-      font-size: 14px;
-      font-weight: 700;
+      background: #d7e3f1 url("avatar.jpg") center 42% / cover no-repeat;
       flex: none;
     }
 
@@ -242,12 +237,7 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #d7e3f1;
-      color: #3d5d86;
-      display: grid;
-      place-items: center;
-      font-size: 12px;
-      font-weight: 700;
+      background: #d7e3f1 url("avatar.jpg") center 42% / cover no-repeat;
       flex: none;
     }
 
@@ -408,7 +398,7 @@
   </div>
   <div class="stage">
     <aside class="panel">
-      <p>自分で書いても、下の3つから選んでも返せます。ぼかすか、決めるか、聞き返すかで、監督の反応が変わります。</p>
+      <p>自分で書いても、下の3つから選んでも返せます。ぼかすか、決めるか、聞き返すかで、しもへい。の反応が変わります。</p>
       <button class="ghost" id="reset" type="button">会話を最初から</button>
       <p class="hint">LINEには繋がっていません。曖昧な返事だと同じ問いが残り、核を一文で書くと次の問いに進みます。</p>
     </aside>
@@ -416,9 +406,9 @@
     <div class="phone">
       <div class="screen">
         <header>
-          <div class="avatar">監</div>
+          <div class="avatar" role="img" aria-label="しもへい。"></div>
           <div>
-            <div class="who">監督</div>
+            <div class="who">しもへい。</div>
             <div class="status">オンライン</div>
           </div>
         </header>
@@ -461,14 +451,13 @@
       if (who === "them") {
         var face = document.createElement("div");
         face.className = "face";
-        face.textContent = withName ? "監" : "";
         face.style.visibility = withName ? "visible" : "hidden";
         var stack = document.createElement("div");
         stack.className = "stack";
         if (withName) {
           var name = document.createElement("div");
           name.className = "name";
-          name.textContent = "監督";
+          name.textContent = "しもへい。";
           stack.appendChild(name);
         }
         var bubble = document.createElement("div");
@@ -498,7 +487,7 @@
       row.id = "typing";
       var face = document.createElement("div");
       face.className = "face";
-      face.textContent = "監";
+      face.setAttribute("aria-hidden", "true");
       var stack = document.createElement("div");
       stack.className = "stack";
       var bubble = document.createElement("div");
