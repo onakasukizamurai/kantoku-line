@@ -299,7 +299,7 @@
 
     .chips {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 6px;
       padding: 0 10px 8px;
       flex: none;
@@ -312,12 +312,14 @@
     .chips button {
       appearance: none;
       border: 0;
-      background: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.92);
       color: #243044;
-      border-radius: 999px;
-      padding: 7px 10px;
+      border-radius: 14px;
+      padding: 8px 10px;
       font: inherit;
       font-size: 12px;
+      line-height: 1.45;
+      text-align: left;
       cursor: pointer;
     }
 
@@ -406,15 +408,9 @@
   </div>
   <div class="stage">
     <aside class="panel">
-      <p>自分のLINEを入れると、部活の監督がコンサルの詰め方で返してくる。結論ではなく、論点・目的・根拠・意思まで分解される。</p>
-      <p class="label">詰め度</p>
-      <div class="levels" id="levels">
-        <button type="button" data-level="1">まだ優しい</button>
-        <button type="button" data-level="2" class="on">ふつうに詰める</button>
-        <button type="button" data-level="3">鬼詰め</button>
-      </div>
+      <p>自分で書いても、下の3つから選んでも返せます。ぼかすか、決めるか、聞き返すかで、監督の反応が変わります。</p>
       <button class="ghost" id="reset" type="button">会話を最初から</button>
-      <p class="hint">LINEには繋がっていない。送信用ではなく、返し方の練習用。曖昧な返事だと同じ問いが残る。核を一文で書くと、次の問いに進む。</p>
+      <p class="hint">LINEには繋がっていません。曖昧な返事だと同じ問いが残り、核を一文で書くと次の問いに進みます。</p>
     </aside>
 
     <div class="phone">
@@ -428,12 +424,7 @@
         </header>
         <div class="log" id="log"></div>
         <div class="ask" id="ask"></div>
-        <div class="chips" id="chips">
-          <button type="button">ちょっと参加むずかしいです</button>
-          <button type="button">とりあえず進めようと思ってます</button>
-          <button type="button">まだよく分からないです</button>
-          <button type="button">どうすればいいですか</button>
-        </div>
+        <div class="chips" id="chips"></div>
         <form id="form">
           <textarea id="input" rows="1" placeholder="メッセージ"></textarea>
           <button class="send" id="send" type="submit" aria-label="送信">➤</button>
@@ -536,6 +527,18 @@
       box.appendChild(body);
     }
 
+    function renderChoices() {
+      var list = Kantoku.choices(convo);
+      chips.textContent = "";
+      list.forEach(function (item) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = item.text;
+        btn.setAttribute("data-tone", item.tone);
+        chips.appendChild(btn);
+      });
+    }
+
     function boot() {
       logEl.textContent = "";
       var day = document.createElement("div");
@@ -547,7 +550,7 @@
         addBubble("them", line, i === 0);
       });
       setAsk(convo.pending);
-      chips.hidden = false;
+      renderChoices();
     }
 
     function sleep(ms) {
@@ -556,11 +559,10 @@
       });
     }
 
-    async function sendText(text) {
+    async function sendText(text, tone) {
       var value = (text || "").trim();
       if (!value || busy) return;
       busy = true;
-      chips.hidden = true;
       addBubble("me", value, false);
       input.value = "";
       fit();
@@ -568,7 +570,12 @@
       showTyping();
       var wait = Math.min(1800, 450 + value.length * 18);
       await sleep(wait);
-      var result = Kantoku.reply(value, convo);
+      var result = Kantoku.reply(value, {
+        idx: convo.idx,
+        pending: convo.pending,
+        nonce: convo.nonce,
+        tone: tone || null,
+      });
       convo.idx = result.idx;
       convo.pending = result.pending;
       convo.nonce += 1;
@@ -578,6 +585,7 @@
         if (i < result.bubbles.length - 1) await sleep(280);
       }
       setAsk(convo.pending);
+      renderChoices();
       busy = false;
       input.focus();
     }
@@ -617,22 +625,11 @@
     chips.addEventListener("click", function (e) {
       var btn = e.target.closest("button");
       if (!btn) return;
-      sendText(btn.textContent);
-    });
-
-    document.getElementById("levels").addEventListener("click", function (e) {
-      var btn = e.target.closest("button");
-      if (!btn) return;
-      convo.level = Number(btn.getAttribute("data-level"));
-      Array.prototype.forEach.call(document.querySelectorAll(".levels button"), function (el) {
-        el.classList.toggle("on", el === btn);
-      });
+      sendText(btn.textContent, btn.getAttribute("data-tone"));
     });
 
     document.getElementById("reset").addEventListener("click", function () {
-      var level = convo.level;
       convo = Kantoku.initial();
-      convo.level = level;
       busy = false;
       hideTyping();
       boot();

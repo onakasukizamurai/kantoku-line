@@ -202,8 +202,32 @@
     return "「" + quote + "」";
   }
 
-  function crack(quote, f, rng, dodge) {
+  function crack(quote, f, rng, dodge, tone) {
     const q = qOf(quote);
+    if (tone === "deflect") {
+      return pick(rng, [
+        "聞き方が、相手に決めてもらう形になってる。\n" +
+          q + " には、あなたの目的が入ってない。\n" +
+          "目的が空のままの「どうすれば」は、一般論しか返せない。欲しいのが自分の判断なら、順番が逆。",
+        "その質問、僕が答えた瞬間に、あなたの質問じゃなくなる。\n" +
+          "手順は出せる。ただ手順は、目的のあとにしか意味がない。\n" +
+          "今やってるのは、決めたくないことの置き場所になってない？",
+      ]);
+    }
+    if (tone === "vague") {
+      return pick(rng, [
+        q + " は感触であって、判断じゃない。\n何が足りないのか。事実か、基準か、決めたあとの面倒か。この三つ、対処が全部違う。\n混ぜたまま渡されても、僕は感想しか返せない。",
+        "強度を下げてる。\n" +
+          q + "\n" +
+          "曖昧語を抜いて書き直すと、何が残る。残らないなら、まだ判断してない。してないなら、してないと言って。",
+      ]);
+    }
+    if (tone === "direct") {
+      return pick(rng, [
+        q + "、は判断の形になってる。ここは否定しない。\nただ、言葉がきれいでも、中身が手段止まりのことがある。そこだけ見る。",
+        "文としては受け取れる。曖昧語で逃げてはいない。\nなので次は、言い回しの話じゃなくて中身の話をする。",
+      ]);
+    }
     if (f.how) {
       return pick(rng, [
         "聞き方が、相手に決めてもらう形になってる。\n" +
@@ -294,7 +318,25 @@
     ]);
   }
 
-  function opener(quote, f, rng, dodge, lap, advanced) {
+  function opener(quote, f, rng, dodge, lap, advanced, tone) {
+    if (tone === "vague") {
+      return pick(rng, [
+        "曖昧なまま置いてる。それ、返事の形をしてるだけ。",
+        "ぼかして着地させてる。着地にはなってない。",
+      ]);
+    }
+    if (tone === "deflect") {
+      return pick(rng, [
+        "質問で返してきた。",
+        "決めるのを、こっちに渡そうとしてる。",
+      ]);
+    }
+    if (tone === "direct") {
+      return pick(rng, [
+        "うん、今回は核がある。" + qOf(quote) + "。",
+        "そこは判断として受け取った。逃げてはいない。",
+      ]);
+    }
     if (dodge) {
       return pick(rng, [
         "聞いてることから、ずれてる。",
@@ -341,12 +383,96 @@
     ]);
   }
 
+  const CHOICES = {
+    issue: [
+      [
+        { tone: "vague", text: "ちょっとまだ整理できてないです" },
+        { tone: "direct", text: "論点は、今週の練習をどこまで優先するかを自分で決めることです" },
+        { tone: "deflect", text: "それって、どうすればいいんですか" },
+      ],
+      [
+        { tone: "vague", text: "なんかモヤっとしてて、言葉にするのが難しいです" },
+        { tone: "direct", text: "論点は、卒論と練習のどちらを今週の本丸にするかです" },
+        { tone: "deflect", text: "監督なら、この場合どう判断しますか" },
+      ],
+    ],
+    purpose: [
+      [
+        { tone: "vague", text: "とりあえず両方進めようと思ってます" },
+        { tone: "direct", text: "目的は、大会で記録を出すことです。練習はそのための手段です" },
+        { tone: "deflect", text: "目的って、何を書けば正解なんですか" },
+      ],
+      [
+        { tone: "vague", text: "なんとなく成長できればいいかな、くらいです" },
+        { tone: "direct", text: "目的は、提出に間に合う状態を自分で作ることです" },
+        { tone: "deflect", text: "目的は監督から見ると何になりますか" },
+      ],
+    ],
+    evidence: [
+      [
+        { tone: "vague", text: "なんとなくそんな気がしてます" },
+        { tone: "direct", text: "根拠は、先週から睡眠が4時間を切って、フォームが崩れているからです" },
+        { tone: "deflect", text: "根拠って、どのくらい具体なら足りますか" },
+      ],
+      [
+        { tone: "vague", text: "たぶん前より疲れてるからだと思います" },
+        { tone: "direct", text: "根拠は、直近2週のタイムが両方落ちていることです" },
+        { tone: "deflect", text: "その根拠で合ってるか、見てもらえますか" },
+      ],
+    ],
+    choice: [
+      [
+        { tone: "vague", text: "まあ、様子見でいい気がします" },
+        { tone: "direct", text: "今週は練習を半分にして、残りは卒論を優先します" },
+        { tone: "deflect", text: "どっちを選ぶのが正しいですか" },
+      ],
+      [
+        { tone: "vague", text: "決めきれないので、一旦保留で" },
+        { tone: "direct", text: "自分の意思として、次の試合までは練習を本丸にします" },
+        { tone: "deflect", text: "選ぶ前に、監督の意見を聞きたいです" },
+      ],
+    ],
+    done: [
+      [
+        { tone: "vague", text: "頑張って進めます" },
+        { tone: "direct", text: "金曜までに序論を3ページ書いて、自分で読み返せる状態にします" },
+        { tone: "deflect", text: "期限は、こっちで決めていいんですか" },
+      ],
+      [
+        { tone: "vague", text: "できる範囲でやってみます" },
+        { tone: "direct", text: "次の練習までに、課題のフォームを3本動画で残します" },
+        { tone: "deflect", text: "完了のラインは監督が決めた方がよくないですか" },
+      ],
+    ],
+    owner: [
+      [
+        { tone: "vague", text: "自分が納得したら、達成でいいです" },
+        { tone: "direct", text: "金曜の夜に、第三者へ一文で説明できたら達成です" },
+        { tone: "deflect", text: "誰かに見てもらわないと、ダメですか" },
+      ],
+      [
+        { tone: "vague", text: "まあ、自分の中で分かってれば十分かなと" },
+        { tone: "direct", text: "次の面談で、目的と期限を口頭で言えたら達成です" },
+        { tone: "deflect", text: "判定は監督が見る形にした方がいいですか" },
+      ],
+    ],
+  };
+
+  function choices(state) {
+    const idx = state.idx || 0;
+    const stage = STAGES[idx % STAGES.length];
+    const sets = CHOICES[stage.id];
+    const lap = Math.floor(idx / STAGES.length);
+    return sets[lap % sets.length];
+  }
+
   function reply(text, state) {
-    const level = state.level || 2;
+    const level = 2;
     const nonce = state.nonce || 1;
+    const tone = state.tone || null;
     const f = analyze(text);
     const quote = focusSentence(text);
-    const dodge = isDodge(text, f);
+    const dodge = tone === "direct" ? false : tone === "vague" || tone === "deflect" ? true : isDodge(text, f);
     let idx = state.idx || 0;
     const advanced = !dodge;
     if (advanced) idx += 1;
@@ -357,10 +483,10 @@
     const rng = mulberry32(hashStr(text + "|" + idx + "|" + level + "|" + nonce + "|" + (dodge ? "d" : "a")));
 
     const bubbles = [];
-    bubbles.push(opener(quote, f, rng, dodge, lap, advanced));
+    bubbles.push(opener(quote, f, rng, dodge, lap, advanced, tone));
 
     const middle = [];
-    middle.push(crack(quote, f, rng, dodge));
+    middle.push(crack(quote, f, rng, dodge, tone));
     if (dodge) {
       middle.push(redo());
       if (level >= 2) middle.push(stage.probe(qOf(quote)));
@@ -416,6 +542,7 @@
     reply: reply,
     initial: initial,
     opening: opening,
+    choices: choices,
     stages: STAGES,
   };
 });
