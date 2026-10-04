@@ -466,6 +466,32 @@
     return sets[lap % sets.length];
   }
 
+  const SHORT = {
+    vague: ["それ、返事になってない。", "ぼかさないで。", "で、結局どうするの。"],
+    deflect: ["それはあなたが決めること。", "質問で返さない。", "僕に決めさせないで。"],
+    direct: ["うん、そこは受け取った。", "いいね、核がある。", "了解。次いこう。"],
+    dodge: ["聞いてることと、ずれてる。", "それは状況。判断じゃない。", "一文で言い切って。"],
+    ok: ["なるほど。", "うん、受け取った。", "了解。"],
+  };
+
+  const MID_PUSH = {
+    dodge: [
+      "曖昧なまま頷くと、あとで自分が困るよ。",
+      "決めてないなら、決めてないと言っていい。",
+      "感触じゃなくて、判断が欲しい。",
+    ],
+    ok: [
+      "ただ、言葉がきれいでも中身が手段止まりのことがある。",
+      "次は中身を見る。",
+      "その先を一段だけ詰める。",
+    ],
+  };
+
+  function shortLine(rng, dodge, tone) {
+    if (tone && SHORT[tone]) return pick(rng, SHORT[tone]);
+    return pick(rng, SHORT[dodge ? "dodge" : "ok"]);
+  }
+
   function reply(text, state) {
     const level = 2;
     const nonce = state.nonce || 1;
@@ -481,6 +507,24 @@
     const stage = STAGES[idx % STAGES.length];
     const ask = lap > 0 ? stage.ask.replace(/。$/, "。前回より具体で。") : stage.ask;
     const rng = mulberry32(hashStr(text + "|" + idx + "|" + level + "|" + nonce + "|" + (dodge ? "d" : "a")));
+
+    if (nonce <= 2) {
+      return {
+        bubbles: [shortLine(rng, dodge, tone), ask],
+        idx: dodge ? state.idx || 0 : idx,
+        pending: ask,
+        dodge: dodge,
+      };
+    }
+
+    if (nonce <= 4) {
+      return {
+        bubbles: [shortLine(rng, dodge, tone) + "\n" + pick(rng, MID_PUSH[dodge ? "dodge" : "ok"]), ask],
+        idx: dodge ? state.idx || 0 : idx,
+        pending: ask,
+        dodge: dodge,
+      };
+    }
 
     const bubbles = [];
     bubbles.push(opener(quote, f, rng, dodge, lap, advanced, tone));
@@ -534,7 +578,7 @@
   function opening() {
     return [
       "今日は何の話からいく。",
-      "結論からでいい。ただし『とりあえず』『なんか』『忙しい』は、結論として受け取らない。\n\n先にこれだけ。\n" + STAGES[0].ask,
+      STAGES[0].ask,
     ];
   }
 
