@@ -399,7 +399,7 @@
     purpose: [
       [
         { tone: "vague", text: "とりあえず両方進めようと思ってます" },
-        { tone: "direct", text: "目的は、大会で記録を出すことです。練習はそのための手段です" },
+        { tone: "direct", text: "目的は、学習院戦で失点を2点以内に抑えて勝つことです" },
         { tone: "deflect", text: "目的って、何を書けば正解なんですか" },
       ],
       [
@@ -458,7 +458,16 @@
     ],
   };
 
+  const TACTICS_ASK = "学習院戦の戦術、いつ・何の形で出すか一文で。";
+
+  const OPENING_CHOICES = [
+    { tone: "vague", text: "すみません、まだ考え中です" },
+    { tone: "direct", text: "まだです。金曜までに、守備の形を1枚にまとめて送ります" },
+    { tone: "deflect", text: "どんな感じで作ればいいですか" },
+  ];
+
   function choices(state) {
+    if (state.idx < 0) return OPENING_CHOICES;
     const idx = state.idx || 0;
     const stage = STAGES[idx % STAGES.length];
     const sets = CHOICES[stage.id];
@@ -499,19 +508,22 @@
     const f = analyze(text);
     const quote = focusSentence(text);
     const dodge = tone === "direct" ? false : tone === "vague" || tone === "deflect" ? true : isDodge(text, f);
-    let idx = state.idx || 0;
+    const opening = state.idx < 0;
+    let idx = opening ? -1 : state.idx || 0;
     const advanced = !dodge;
-    if (advanced) idx += 1;
+    if (advanced) idx = opening ? 1 : idx + 1;
+    const keepIdx = opening ? -1 : state.idx || 0;
 
-    const lap = Math.floor(idx / STAGES.length);
-    const stage = STAGES[idx % STAGES.length];
-    const ask = lap > 0 ? stage.ask.replace(/。$/, "。前回より具体で。") : stage.ask;
+    const lap = Math.floor(Math.max(idx, 0) / STAGES.length);
+    const stage = STAGES[Math.max(idx, 0) % STAGES.length];
+    const ask =
+      idx < 0 ? TACTICS_ASK : lap > 0 ? stage.ask.replace(/。$/, "。前回より具体で。") : stage.ask;
     const rng = mulberry32(hashStr(text + "|" + idx + "|" + level + "|" + nonce + "|" + (dodge ? "d" : "a")));
 
     if (nonce <= 2) {
       return {
         bubbles: [shortLine(rng, dodge, tone), ask],
-        idx: dodge ? state.idx || 0 : idx,
+        idx: dodge ? keepIdx : idx,
         pending: ask,
         dodge: dodge,
       };
@@ -520,7 +532,7 @@
     if (nonce <= 4) {
       return {
         bubbles: [shortLine(rng, dodge, tone) + "\n" + pick(rng, MID_PUSH[dodge ? "dodge" : "ok"]), ask],
-        idx: dodge ? state.idx || 0 : idx,
+        idx: dodge ? keepIdx : idx,
         pending: ask,
         dodge: dodge,
       };
@@ -560,7 +572,7 @@
 
     return {
       bubbles: bubbles,
-      idx: dodge ? state.idx || 0 : idx,
+      idx: dodge ? keepIdx : idx,
       pending: ask,
       dodge: dodge,
     };
@@ -568,18 +580,15 @@
 
   function initial() {
     return {
-      idx: 0,
-      pending: STAGES[0].ask,
+      idx: -1,
+      pending: TACTICS_ASK,
       level: 2,
       nonce: 1,
     };
   }
 
   function opening() {
-    return [
-      "今日は何の話からいく。",
-      STAGES[0].ask,
-    ];
+    return ["学習院戦の戦術まだ？"];
   }
 
   return {
